@@ -4,9 +4,9 @@ import com.sparta.myselectshop.dto.ProductMypriceRequestDto;
 import com.sparta.myselectshop.dto.ProductRequestDto;
 import com.sparta.myselectshop.dto.ProductResponseDto;
 import com.sparta.myselectshop.entity.Product;
+import com.sparta.myselectshop.naver.dto.ItemDto;
 import com.sparta.myselectshop.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,15 +14,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor // @Autowired 생성자 부분 생략 가능 (생성자가 1개 일 때만)
+@RequiredArgsConstructor
 public class ProductService {
 
     private final ProductRepository productRepository;
-
-//    @Autowired
-//    public ProductService(ProductRepository productRepository) {
-//        this.productRepository = productRepository;
-//    }
 
     @Transactional
     public ProductResponseDto createProduct(ProductRequestDto requestDto) {
@@ -57,4 +52,11 @@ public class ProductService {
         return product.getId();
     }
 
+    @Transactional
+    public void updateBySearch(Long id, ItemDto itemDto) {
+        Product product = productRepository.findById(id).orElseThrow(
+                () -> new NullPointerException("해당 상품은 존재하지 않습니다.")
+        );
+        product.updateByItemDto(itemDto);
+    }
 }
