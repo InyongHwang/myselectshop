@@ -13,23 +13,25 @@ import java.util.List;
 @Component
 public class ProductService {
 
+    private final ProductRepository productRepository;
+
+    public ProductService() {
+        this.productRepository = new ProductRepository();
+    }
+
     public ProductResponseDto createProduct(ProductRequestDto requestDto) throws SQLException {
         // 요청받은 DTO 로 DB에 저장할 객체 만들기
         Product product = new Product(requestDto);
-
-        ProductRepository productRepository = new ProductRepository();
 
         return  productRepository.createProduct(product);
     }
 
     public List<ProductResponseDto> getProducts() throws SQLException {
-        ProductRepository productRepository = new ProductRepository();
 
         return productRepository.getProducts();
     }
 
     public Long updateProduct(Long id, ProductMypriceRequestDto requestDto) throws SQLException {
-        ProductRepository productRepository = new ProductRepository();
         Product product = productRepository.getProduct(id);
 
         if(product == null) {
