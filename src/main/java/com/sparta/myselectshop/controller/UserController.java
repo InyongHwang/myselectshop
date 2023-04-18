@@ -10,7 +10,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.servlet.ModelAndView;
+
+import javax.servlet.http.HttpServletResponse;
 
 @Controller
 @RequestMapping("/api/user")
@@ -18,11 +22,6 @@ import org.springframework.web.servlet.ModelAndView;
 public class UserController {
 
     private final UserService userService;
-
-//    @Autowired
-//    public UserController(UserService userService) {
-//        this.userService = userService;
-//    }
 
     @GetMapping("/signup")
     public ModelAndView signupPage() {
@@ -40,9 +39,11 @@ public class UserController {
         return "redirect:/api/user/login";
     }
 
+    // jwt를 사용한 로그인 - ajax에서 body쪽에 값이 넘어와서 @RequestBody 필요함
+    @ResponseBody
     @PostMapping("/login")
-    public String login(LoginRequestDto loginRequestDto) {
-        userService.login(loginRequestDto);
-        return "redirect:/api/shop";
+    public String login(@RequestBody LoginRequestDto loginRequestDto, HttpServletResponse response) {
+        userService.login(loginRequestDto, response);
+        return "success";
     }
 }

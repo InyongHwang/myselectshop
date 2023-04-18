@@ -34,12 +34,17 @@ public class Product extends Timestamped{
     @Column(nullable = false)
     private int myprice;
 
-    public Product(ProductRequestDto requestDto) {
+    // jwt 사용하면서 추가된 컬럼
+    @Column(nullable = false)
+    private Long userId;
+
+    public Product(ProductRequestDto requestDto, Long userId) {
         this.title = requestDto.getTitle();
         this.image = requestDto.getImage();
         this.link = requestDto.getLink();
         this.lprice = requestDto.getLprice();
         this.myprice = 0;
+        this.userId = userId;
     }
 
     public void update(ProductMypriceRequestDto requestDto) {
@@ -49,5 +54,4 @@ public class Product extends Timestamped{
     public void updateByItemDto(ItemDto itemDto) {
         this.lprice = itemDto.getLprice();
     }
-
 }
