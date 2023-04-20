@@ -3,21 +3,25 @@ package com.sparta.myselectshop.service;
 import com.sparta.myselectshop.dto.ProductMypriceRequestDto;
 import com.sparta.myselectshop.dto.ProductRequestDto;
 import com.sparta.myselectshop.dto.ProductResponseDto;
+import com.sparta.myselectshop.entity.Folder;
 import com.sparta.myselectshop.entity.Product;
 import com.sparta.myselectshop.entity.User;
 import com.sparta.myselectshop.entity.UserRoleEnum;
 import com.sparta.myselectshop.jwt.JwtUtil;
 import com.sparta.myselectshop.naver.dto.ItemDto;
+import com.sparta.myselectshop.repository.FolderRepository;
 import com.sparta.myselectshop.repository.ProductRepository;
 import com.sparta.myselectshop.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +29,7 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final FolderRepository folderRepository;
     private final JwtUtil jwtUtil;
 
     // 관심상품 등록하기 - 토큰o
@@ -61,7 +66,13 @@ public class ProductService {
 
     // 관심상품 조회하기 - 토큰o
     @Transactional(readOnly = true)
-    public List<ProductResponseDto> getProducts(HttpServletRequest request) {
+    public Page<Product> getProducts(HttpServletRequest request,
+                                     int page, int size, String sortBy, boolean isAsc) {
+        // 페이징 처리
+        Sort.Direction direction = isAsc ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Sort sort = Sort.by(direction, sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+
         // Request에서 Token 가져오기
         String token = jwtUtil.resolveToken(request);
         Claims claims;
@@ -69,7 +80,7 @@ public class ProductService {
         // 토큰이 있는 경우에만 관심상품 조회 가능
         if (token != null) {
             // Token 검증
-            if (jwtUtil.validateToken(token)) { // 토큰의 위변조나 만료 검증
+            if (jwtUtil.validateToken(token)) {
                 // 토큰에서 사용자 정보 가져오기
                 claims = jwtUtil.getUserInfoFromToken(token);
             } else {
@@ -81,25 +92,21 @@ public class ProductService {
                     () -> new IllegalArgumentException("사용자가 존재하지 않습니다.")
             );
 
-            // 사용자 권한 가져와서 ADMIN이면 전체 조회, USER면 본인이 추가한 부분만 조회
+            // 사용자 권한 가져와서 ADMIN 이면 전체 조회, USER 면 본인이 추가한 부분 조회
             UserRoleEnum userRoleEnum = user.getRole();
             System.out.println("role = " + userRoleEnum);
 
-            List<ProductResponseDto> list = new ArrayList<>();
-            List<Product> productList;
+            Page<Product> products;
 
             if (userRoleEnum == UserRoleEnum.USER) {
-                // 사용자 권한이 USER이면
-                productList = productRepository.findAllByUserId(user.getId());
+                // 사용자 권한이 USER일 경우
+                products = productRepository.findAllByUserId(user.getId(), pageable);
             } else {
-                productList = productRepository.findAll();
+                products = productRepository.findAll(pageable);
             }
 
-            for (Product product : productList) {
-                list.add(new ProductResponseDto(product));
-            }
+            return products;
 
-            return list;
         } else {
             return null;
         }
@@ -146,5 +153,49 @@ public class ProductService {
                 () -> new NullPointerException("해당 상품은 존재하지 않습니다.")
         );
         product.updateByItemDto(itemDto);
+    }
+
+    @Transactional
+    public Product addFolder(Long productId, Long folderId, HttpServletRequest request) {
+        // Request에서 Token 가져오기
+        String token = jwtUtil.resolveToken(request);
+        Claims claims;
+
+        // 토큰이 있는 경우에만 관심상품 최저가 업데이트 가능
+        if (token != null) {
+            // Token 검증
+            if (jwtUtil.validateToken(token)) {
+                // 토큰에서 사용자 정보 가져오기
+                claims = jwtUtil.getUserInfoFromToken(token);
+            } else {
+                throw new IllegalArgumentException("Token Error");
+            }
+
+            // Token에 담겨있는 사용자 정보로 DB 조회
+            User user = userRepository.findByUsername(claims.getSubject()).orElseThrow(
+                    () -> new IllegalArgumentException("사용자가 존재하지 않습니다.")
+            );
+
+            // 1) 관심상품을 조회합니다.
+            Product product = productRepository.findById(productId)
+                    .orElseThrow(() -> new NullPointerException("해당 상품이 존재하지 않습니다."));
+
+            // 2) 폴더룰 조회합니다.
+            Folder folder = folderRepository.findById(folderId)
+                    .orElseThrow(() -> new NullPointerException("해당 폴더가 존재하지 않습니다."));
+
+            // 3) 조회한 폴더와 관심상품이 모두 로그인한 회원의 소유인지 확인합니다.
+            Long loginUserId = user.getId();
+            if (!product.getUserId().equals(loginUserId) || !folder.getUser().getId().equals(loginUserId)) {
+                throw new IllegalArgumentException("회원님의 관심상품이 아니거나, 회원님의 폴더가 아닙니다.");
+            }
+
+            // 4) 상품에 폴더를 추가합니다.
+            product.addFolder(folder);
+
+            return product;
+        } else {
+            return null;
+        }
     }
 }
