@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,12 +54,42 @@ public class Product extends Timestamped{
     private List<Folder> folderList = new ArrayList<>();
 
     public Product(ProductRequestDto requestDto, Long userId) {
+        // 입력값 Validation
+        if (userId == null || userId <= 0) {
+            throw new IllegalArgumentException("회원 Id가 유효하지 않습니다.");
+        }
+
+        if (requestDto.getTitle() == null || requestDto.getTitle().isEmpty()) {
+            throw new IllegalArgumentException("저장할 수 있는 상품명이 없습니다.");
+        }
+
+        if (!isValidUrl(requestDto.getLink())) {
+            throw new IllegalArgumentException("상품 최저가 페이지 링크가 적절한 URL 형식이 아닙니다.");
+        }
+
+        if (requestDto.getLprice() <= 0) {
+            throw new IllegalArgumentException("상품 최저가가 0 이하입니다.");
+        }
+
+        this.userId = userId;
         this.title = requestDto.getTitle();
         this.image = requestDto.getImage();
         this.link = requestDto.getLink();
         this.lprice = requestDto.getLprice();
         this.myprice = 0;
-        this.userId = userId;
+    }
+
+    boolean isValidUrl(String url) {
+        try {
+            new URL(url).toURI();
+            return true;
+        }
+        catch (URISyntaxException exception) {
+            return false;
+        }
+        catch (MalformedURLException exception) {
+            return false;
+        }
     }
 
     public void update(ProductMypriceRequestDto requestDto) {
