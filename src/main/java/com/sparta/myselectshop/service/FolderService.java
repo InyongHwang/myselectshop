@@ -44,6 +44,8 @@ public class FolderService {
             if (!isExistFolderName(folderName, existFolderList)) {
                 Folder folder = new Folder(folderName, user);
                 folderList.add(folder);
+            } else {
+                throw new IllegalArgumentException("중복된 폴더명 ('" + isExistFolderName(folderName, existFolderList) + "')을 삭제하고 재시도해 주세요.");
             }
         }
 

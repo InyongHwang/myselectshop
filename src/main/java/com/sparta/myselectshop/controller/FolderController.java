@@ -3,14 +3,17 @@ package com.sparta.myselectshop.controller;
 import com.sparta.myselectshop.dto.FolderRequestDto;
 import com.sparta.myselectshop.entity.Folder;
 import com.sparta.myselectshop.entity.Product;
+import com.sparta.myselectshop.entity.User;
+import com.sparta.myselectshop.exception.RestApiException;
 import com.sparta.myselectshop.security.UserDetailsImpl;
 import com.sparta.myselectshop.service.FolderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 @RestController
@@ -26,16 +29,7 @@ public class FolderController {
             @RequestBody FolderRequestDto folderRequestDto,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-
         List<String> folderNames = folderRequestDto.getFolderNames();
-
-        System.out.println("======================================================");
-        System.out.println("user.getUsername() = " + userDetails.getUsername());
-        System.out.println("user.getUser() = " + userDetails.getUser());
-        System.out.println("user.getUser().getPassword() = " + userDetails.getUser().getPassword());
-        System.out.println("user.getUser().getId() = " + userDetails.getUser().getId());
-        System.out.println("======================================================");
-
         return folderService.addFolders(folderNames, userDetails.getUsername());
     }
 
